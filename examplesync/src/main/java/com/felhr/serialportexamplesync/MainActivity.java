@@ -11,6 +11,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -23,13 +24,17 @@ import java.lang.ref.WeakReference;
 import java.util.Set;
 
 public class MainActivity extends AppCompatActivity {
-
+    private final static String TAG = "MainActivity";
+    private final static String SubTAG = "Ceres";
+    private final static boolean DEBUG = true;
     /*
      * Notifications from UsbService will be received here.
      */
     private final BroadcastReceiver mUsbReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "BroadcastReceiver called.");
             switch (intent.getAction()) {
                 case UsbService.ACTION_USB_PERMISSION_GRANTED: // USB PERMISSION GRANTED
                     Toast.makeText(context, "USB Ready", Toast.LENGTH_SHORT).show();
@@ -46,6 +51,12 @@ public class MainActivity extends AppCompatActivity {
                 case UsbService.ACTION_USB_NOT_SUPPORTED: // USB NOT SUPPORTED
                     Toast.makeText(context, "USB device not supported", Toast.LENGTH_SHORT).show();
                     break;
+                case UsbService.ACTION_CDC_DRIVER_IS_WORKING: // CDC USB IS WORKING
+                    Toast.makeText(context, "CDC USB device is working", Toast.LENGTH_SHORT).show();
+                    break;
+                case UsbService.ACTION_USB_DEVICE_IS_WORKING: // CDC USB IS WORKING
+                    Toast.makeText(context, "USB device is working", Toast.LENGTH_SHORT).show();
+                    break;
             }
         }
     };
@@ -57,18 +68,24 @@ public class MainActivity extends AppCompatActivity {
     private final ServiceConnection usbConnection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName arg0, IBinder arg1) {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "onServiceConnected called.");
             usbService = ((UsbService.UsbBinder) arg1).getService();
             usbService.setHandler(mHandler);
         }
 
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "onServiceDisconnected called.");
             usbService = null;
         }
     };
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "onCreate called.");
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -83,7 +100,10 @@ public class MainActivity extends AppCompatActivity {
                 if (!editText.getText().toString().equals("")) {
                     String data = editText.getText().toString();
                     if (usbService != null) { // if UsbService was correctly binded, Send data
-                        usbService.write(data.getBytes());
+                        if (DEBUG)
+                            Log.d(TAG+SubTAG, "onCreate called." + " d: " + data + ", b0: " + data.getBytes()[0] + ", b1: " + data.getBytes()[1]);
+                        //usbService.write(data.getBytes());
+                        usbService.write(hexStringToByteArray(data));
                     }
                 }
             }
@@ -125,6 +145,8 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onResume() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "onResume called.");
         super.onResume();
         setFilters();  // Start listening notifications from UsbService
         startService(UsbService.class, usbConnection, null); // Start UsbService(if it was not started before) and Bind it
@@ -132,12 +154,16 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onPause() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "onPause called.");
         super.onPause();
         unregisterReceiver(mUsbReceiver);
         unbindService(usbConnection);
     }
 
     private void startService(Class<?> service, ServiceConnection serviceConnection, Bundle extras) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "startService called.");
         if (!UsbService.SERVICE_CONNECTED) {
             Intent startService = new Intent(this, service);
             if (extras != null && !extras.isEmpty()) {
@@ -152,14 +178,28 @@ public class MainActivity extends AppCompatActivity {
         Intent bindingIntent = new Intent(this, service);
         bindService(bindingIntent, serviceConnection, Context.BIND_AUTO_CREATE);
     }
+    
+    private byte[] hexStringToByteArray(String s) { // Source, https://stackoverflow.com/questions/11208479/how-do-i-initialize-a-byte-array-in-java
+        int len = s.length();
+        byte[] data = new byte[len / 2];
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(s.charAt(i), 16) << 4)
+                    + Character.digit(s.charAt(i+1), 16));
+        }
+        return data;
+    }
 
     private void setFilters() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setFilters called.");
         IntentFilter filter = new IntentFilter();
         filter.addAction(UsbService.ACTION_USB_PERMISSION_GRANTED);
         filter.addAction(UsbService.ACTION_NO_USB);
         filter.addAction(UsbService.ACTION_USB_DISCONNECTED);
         filter.addAction(UsbService.ACTION_USB_NOT_SUPPORTED);
         filter.addAction(UsbService.ACTION_USB_PERMISSION_NOT_GRANTED);
+        filter.addAction(UsbService.ACTION_CDC_DRIVER_IS_WORKING);
+        filter.addAction(UsbService.ACTION_USB_DEVICE_IS_WORKING);
         registerReceiver(mUsbReceiver, filter);
     }
 
@@ -175,20 +215,31 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void handleMessage(Message msg) {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "handleMessage called.");
             switch (msg.what) {
                 case UsbService.MESSAGE_FROM_SERIAL_PORT:
                     String data = (String) msg.obj;
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "handleMessage called." + "MESSAGE_FROM_SERIAL_PORT: " + data);
                     mActivity.get().display.append(data);
                     break;
                 case UsbService.CTS_CHANGE:
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "handleMessage called." + "CTS_CHANGE ");
                     Toast.makeText(mActivity.get(), "CTS_CHANGE",Toast.LENGTH_LONG).show();
                     break;
                 case UsbService.DSR_CHANGE:
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "handleMessage called." + "DSR_CHANGE ");
                     Toast.makeText(mActivity.get(), "DSR_CHANGE",Toast.LENGTH_LONG).show();
                     break;
                 case UsbService.SYNC_READ:
                     String buffer = (String) msg.obj;
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "handleMessage called." + "SYNC_READ: " + buffer);
                     mActivity.get().display.append(buffer);
+                    mActivity.get().display.append("\n");
                     break;
             }
         }

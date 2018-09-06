@@ -12,6 +12,7 @@ import android.hardware.usb.UsbManager;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 
 import com.felhr.usbserial.CDCSerialDevice;
 import com.felhr.usbserial.UsbSerialDevice;
@@ -22,6 +23,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class UsbService extends Service {
+    private final static String TAG = "UsbService";
+    private final static String SubTAG = "Ceres";
+    private final static boolean DEBUG = true;
 
     public static final String ACTION_USB_READY = "com.felhr.connectivityservices.USB_READY";
     public static final String ACTION_USB_ATTACHED = "android.hardware.usb.action.USB_DEVICE_ATTACHED";
@@ -33,12 +37,16 @@ public class UsbService extends Service {
     public static final String ACTION_USB_DISCONNECTED = "com.felhr.usbservice.USB_DISCONNECTED";
     public static final String ACTION_CDC_DRIVER_NOT_WORKING = "com.felhr.connectivityservices.ACTION_CDC_DRIVER_NOT_WORKING";
     public static final String ACTION_USB_DEVICE_NOT_WORKING = "com.felhr.connectivityservices.ACTION_USB_DEVICE_NOT_WORKING";
+    public static final String ACTION_CDC_DRIVER_IS_WORKING = "com.felhr.connectivityservices.ACTION_CDC_DRIVER_IS_WORKING";
+    public static final String ACTION_USB_DEVICE_IS_WORKING = "com.felhr.connectivityservices.ACTION_USB_DEVICE_IS_WORKING";
+
     public static final int MESSAGE_FROM_SERIAL_PORT = 0;
     public static final int CTS_CHANGE = 1;
     public static final int DSR_CHANGE = 2;
     public static final int SYNC_READ = 3;
     private static final String ACTION_USB_PERMISSION = "com.android.example.USB_PERMISSION";
-    private static final int BAUD_RATE = 9600; // BaudRate. Change this value if you need
+    //private static final int BAUD_RATE = 9600; // BaudRate. Change this value if you need
+    private static final int BAUD_RATE = 115200; // BaudRate. Change this value if you need
     public static boolean SERVICE_CONNECTED = false;
 
     private IBinder binder = new UsbBinder();
@@ -59,6 +67,8 @@ public class UsbService extends Service {
     private UsbSerialInterface.UsbReadCallback mCallback = new UsbSerialInterface.UsbReadCallback() {
         @Override
         public void onReceivedData(byte[] arg0) {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "UsbReadCallback called.");
             try {
                 String data = new String(arg0, "UTF-8");
                 if (mHandler != null)
@@ -75,6 +85,8 @@ public class UsbService extends Service {
     private UsbSerialInterface.UsbCTSCallback ctsCallback = new UsbSerialInterface.UsbCTSCallback() {
         @Override
         public void onCTSChanged(boolean state) {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "UsbCTSCallback called.");
             if(mHandler != null)
                 mHandler.obtainMessage(CTS_CHANGE).sendToTarget();
         }
@@ -86,6 +98,8 @@ public class UsbService extends Service {
     private UsbSerialInterface.UsbDSRCallback dsrCallback = new UsbSerialInterface.UsbDSRCallback() {
         @Override
         public void onDSRChanged(boolean state) {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "UsbDSRCallback called.");
             if(mHandler != null)
                 mHandler.obtainMessage(DSR_CHANGE).sendToTarget();
         }
@@ -97,7 +111,11 @@ public class UsbService extends Service {
     private final BroadcastReceiver usbReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context arg0, Intent arg1) {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "BroadcastReceiver called.");
             if (arg1.getAction().equals(ACTION_USB_PERMISSION)) {
+                if (DEBUG)
+                    Log.d(TAG+SubTAG, "BroadcastReceiver called." + " ACTION_USB_PERMISSION.");
                 boolean granted = arg1.getExtras().getBoolean(UsbManager.EXTRA_PERMISSION_GRANTED);
                 if (granted) // User accepted our USB connection. Try to open the device as a serial port
                 {
@@ -107,13 +125,19 @@ public class UsbService extends Service {
                     new ConnectionThread().start();
                 } else // User not accepted our USB connection. Send an Intent to the Main Activity
                 {
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "BroadcastReceiver called." + " ACTION_USB_PERMISSION_NOT_GRANTED.");
                     Intent intent = new Intent(ACTION_USB_PERMISSION_NOT_GRANTED);
                     arg0.sendBroadcast(intent);
                 }
             } else if (arg1.getAction().equals(ACTION_USB_ATTACHED)) {
+                if (DEBUG)
+                    Log.d(TAG+SubTAG, "BroadcastReceiver called." + " ACTION_USB_ATTACHED.");
                 if (!serialPortConnected)
                     findSerialPortDevice(); // A USB device has been attached. Try to open it as a Serial port
             } else if (arg1.getAction().equals(ACTION_USB_DETACHED)) {
+                if (DEBUG)
+                    Log.d(TAG+SubTAG, "BroadcastReceiver called." + " ACTION_USB_DETACHED.");
                 // Usb device was disconnected. send an intent to the Main Activity
                 Intent intent = new Intent(ACTION_USB_DISCONNECTED);
                 arg0.sendBroadcast(intent);
@@ -131,6 +155,8 @@ public class UsbService extends Service {
      */
     @Override
     public void onCreate() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "onCreate called.");
         this.context = this;
         serialPortConnected = false;
         UsbService.SERVICE_CONNECTED = true;
@@ -145,16 +171,22 @@ public class UsbService extends Service {
      */
     @Override
     public IBinder onBind(Intent intent) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "onBind called.");
         return binder;
     }
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "onStartCommand called.");
         return Service.START_NOT_STICKY;
     }
 
     @Override
     public void onDestroy() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "onDestroy called.");
         super.onDestroy();
         UsbService.SERVICE_CONNECTED = false;
     }
@@ -163,8 +195,13 @@ public class UsbService extends Service {
      * This function will be called from MainActivity to write data through Serial Port
      */
     public void write(byte[] data) {
-        if (serialPort != null)
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "write called.");
+        if (serialPort != null) {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "write called." + " b0: " + data[0] + " b1: " + data[1]);
             serialPort.syncWrite(data, 0);
+        }
     }
 
     /*
@@ -172,15 +209,21 @@ public class UsbService extends Service {
      */
 
     public void changeBaudRate(int baudRate){
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "changeBaudRate called.");
         if(serialPort != null)
             serialPort.setBaudRate(baudRate);
     }
 
     public void setHandler(Handler mHandler) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setHandler called.");
         this.mHandler = mHandler;
     }
 
     private void findSerialPortDevice() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "findSerialPortDevice called.");
         // This snippet will try to open the first encountered usb device connected, excluding usb root hubs
         HashMap<String, UsbDevice> usbDevices = usbManager.getDeviceList();
         if (!usbDevices.isEmpty()) {
@@ -215,6 +258,8 @@ public class UsbService extends Service {
     }
 
     private void setFilter() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setFilter called.");
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_USB_PERMISSION);
         filter.addAction(ACTION_USB_DETACHED);
@@ -226,12 +271,16 @@ public class UsbService extends Service {
      * Request user permission. The response will be received in the BroadcastReceiver
      */
     private void requestUserPermission() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "requestUserPermission called.");
         PendingIntent mPendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(ACTION_USB_PERMISSION), 0);
         usbManager.requestPermission(device, mPendingIntent);
     }
 
     public class UsbBinder extends Binder {
         public UsbService getService() {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "getService called.");
             return UsbService.this;
         }
     }
@@ -241,8 +290,11 @@ public class UsbService extends Service {
      * Although it should be a fast operation. moving usb operations away from UI thread is a good thing.
      */
     private class ConnectionThread extends Thread {
+
         @Override
         public void run() {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "ConnectionThread called.");
             serialPort = UsbSerialDevice.createUsbSerialDevice(device, connection);
             if (serialPort != null) {
                 if (serialPort.syncOpen()) {
@@ -270,8 +322,15 @@ public class UsbService extends Service {
                     //Thread.sleep(2000); // sleep some. YMMV with different chips.
 
                     // Everything went as expected. Send an intent to MainActivity
-                    Intent intent = new Intent(ACTION_USB_READY);
-                    context.sendBroadcast(intent);
+                    //Intent intent = new Intent(ACTION_USB_READY);
+                    //context.sendBroadcast(intent);
+                    if (serialPort instanceof CDCSerialDevice) {
+                        Intent intent2 = new Intent(ACTION_CDC_DRIVER_IS_WORKING);
+                        context.sendBroadcast(intent2);
+                    } else {
+                        Intent intent2 = new Intent(ACTION_USB_DEVICE_IS_WORKING);
+                        context.sendBroadcast(intent2);
+                    }
                 } else {
                     // Serial port could not be opened, maybe an I/O error or if CDC driver was chosen, it does not really fit
                     // Send an Intent to Main Activity
@@ -294,17 +353,33 @@ public class UsbService extends Service {
     private class ReadThread extends Thread {
         @Override
         public void run() {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "ReadThread called.");
             while(true){
                 byte[] buffer = new byte[100];
                 int n = serialPort.syncRead(buffer, 0);
                 if(n > 0) {
                     byte[] received = new byte[n];
                     System.arraycopy(buffer, 0, received, 0, n);
-                    String receivedStr = new String(received);
+                    //String receivedStr = new String(received);
+                    String receivedStr = byteArrayToHexString(received);
                     mHandler.obtainMessage(SYNC_READ, receivedStr).sendToTarget();
                 }
             }
         }
+    }
+
+    private String byteArrayToHexString(byte[] byteArray) { // Source, https://www.jianshu.com/p/17e771cb34aa
+        if (byteArray == null)
+            return null;
+        char[] hexArray = "0123456789ABCDEF".toCharArray();
+        char[] hexChars = new char[byteArray.length * 2];
+        for (int i=0; i<byteArray.length; i++) {
+            int val = byteArray[i] & 0xFF;
+            hexChars[i*2] = hexArray[val>>>4];
+            hexChars[i*2+1] = hexArray[val & 0x0F];
+        }
+        return new String(hexChars);
     }
 }
 
