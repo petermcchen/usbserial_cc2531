@@ -10,6 +10,9 @@ import android.util.Log;
 
 public class CDCSerialDevice extends UsbSerialDevice
 {
+    private final static String TAG = "CDCSerialDevice";
+    private final static String SubTAG = "Ceres";
+    private final static boolean DEBUG = true;
     private static final String CLASS_ID = CDCSerialDevice.class.getSimpleName();
 
     private static final int CDC_REQTYPE_HOST2DEVICE = 0x21;
@@ -71,6 +74,8 @@ public class CDCSerialDevice extends UsbSerialDevice
     @Override
     public boolean open()
     {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "open called.");
         boolean ret = openCDC();
 
         if(ret)
@@ -87,7 +92,8 @@ public class CDCSerialDevice extends UsbSerialDevice
             setThreadsParams(requestIN, outEndpoint);
 
             asyncMode = true;
-
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "open called." + " asyncMode: " + asyncMode);
             return true;
         }else
         {
@@ -98,6 +104,8 @@ public class CDCSerialDevice extends UsbSerialDevice
     @Override
     public void close()
     {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "close called.");
         setControlCommand(CDC_SET_CONTROL_LINE_STATE, CDC_CONTROL_LINE_OFF, null);
         killWorkingThread();
         killWriteThread();
@@ -108,11 +116,16 @@ public class CDCSerialDevice extends UsbSerialDevice
     @Override
     public boolean syncOpen()
     {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "syncOpen called.");
         boolean ret = openCDC();
         if(ret)
         {
             setSyncParams(inEndpoint, outEndpoint);
+
             asyncMode = false;
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "syncOpen called." + " asyncMode: " + asyncMode);
             return true;
         }else
         {

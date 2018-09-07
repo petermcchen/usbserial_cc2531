@@ -1,5 +1,6 @@
 package com.felhr.usbserial;
 
+import java.io.Serializable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.felhr.deviceids.CH34xIds;
@@ -13,9 +14,13 @@ import android.hardware.usb.UsbDeviceConnection;
 import android.hardware.usb.UsbEndpoint;
 import android.hardware.usb.UsbInterface;
 import android.hardware.usb.UsbRequest;
+import android.util.Log;
 
 public abstract class UsbSerialDevice implements UsbSerialInterface
 {
+    private final static String TAG = "UsbSerialDevice";
+    private final static String SubTAG = "Ceres";
+    private final static boolean DEBUG = true;
     private static final String CLASS_ID = UsbSerialDevice.class.getSimpleName();
 
     private static boolean mr1Version;
@@ -47,10 +52,14 @@ public abstract class UsbSerialDevice implements UsbSerialInterface
 
     public UsbSerialDevice(UsbDevice device, UsbDeviceConnection connection)
     {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "UsbSerialDevice called.");
         this.device = device;
         this.connection = connection;
         this.asyncMode = true;
         serialBuffer = new SerialBuffer(mr1Version);
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "UsbSerialDevice called." + " asyncMode: " + asyncMode);
     }
 
     public static UsbSerialDevice createUsbSerialDevice(UsbDevice device, UsbDeviceConnection connection)
@@ -108,6 +117,8 @@ public abstract class UsbSerialDevice implements UsbSerialInterface
     @Override
     public void write(byte[] buffer)
     {
+        if (DEBUG)
+            Log.d (TAG+SubTAG, "write called." + " asyncMode: " + asyncMode);
         if(asyncMode)
             serialBuffer.putWriteBuffer(buffer);
     }
@@ -139,9 +150,12 @@ public abstract class UsbSerialDevice implements UsbSerialInterface
     @Override
     public int read(UsbReadCallback mCallback)
     {
+        if (DEBUG)
+            Log.d (TAG+SubTAG, "read called." + " asyncMode: " + asyncMode);
         if(!asyncMode)
             return -1;
-
+        if (DEBUG)
+            Log.d (TAG+SubTAG, "read called." + " mr1: " + mr1Version);
         if(mr1Version)
         {
             if (workerThread != null) {
@@ -170,6 +184,8 @@ public abstract class UsbSerialDevice implements UsbSerialInterface
     @Override
     public int syncWrite(byte[] buffer, int timeout)
     {
+        if (DEBUG)
+            Log.d (TAG+SubTAG, "syncWrite called." + " asyncMode: " + asyncMode);
         if(!asyncMode)
         {
             if(buffer == null)
@@ -185,6 +201,8 @@ public abstract class UsbSerialDevice implements UsbSerialInterface
     @Override
     public int syncRead(byte[] buffer, int timeout)
     {
+        if (DEBUG)
+            Log.d (TAG+SubTAG, "syncWrite called." + " asyncMode: " + asyncMode);
         if(asyncMode)
         {
             return -1;
@@ -255,6 +273,8 @@ public abstract class UsbSerialDevice implements UsbSerialInterface
         {
             while(working.get())
             {
+                if (DEBUG)
+                    Log.d(TAG+ SubTAG, "WorkerThread run called.");
                 UsbRequest request = connection.requestWait();
                 if(request != null && request.getEndpoint().getType() == UsbConstants.USB_ENDPOINT_XFER_BULK
                         && request.getEndpoint().getDirection() == UsbConstants.USB_DIR_IN)
@@ -327,6 +347,8 @@ public abstract class UsbSerialDevice implements UsbSerialInterface
         {
             while(working.get())
             {
+                if (DEBUG)
+                    Log.d(TAG+ SubTAG, "WriteThread run called.");
                 byte[] data = serialBuffer.getWriteBuffer();
                 if(data.length > 0)
                     connection.bulkTransfer(outEndpoint, data, data.length, USB_TIMEOUT);
@@ -370,6 +392,8 @@ public abstract class UsbSerialDevice implements UsbSerialInterface
 
             while(working.get())
             {
+                if (DEBUG)
+                    Log.d(TAG+ SubTAG, "ReadThread run called.");
                 int numberBytes;
                 if(inEndpoint != null)
                     numberBytes = connection.bulkTransfer(inEndpoint, serialBuffer.getBufferCompatible(),
