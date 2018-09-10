@@ -48,6 +48,7 @@ public class UsbService extends Service {
     //private static final int BAUD_RATE = 9600; // BaudRate. Change this value if you need
     private static final int BAUD_RATE = 115200; // BaudRate. Change this value if you need
     public static boolean SERVICE_CONNECTED = false;
+    private boolean USB_IS_CONNECTED = false;
 
     private IBinder binder = new UsbBinder();
 
@@ -131,11 +132,13 @@ public class UsbService extends Service {
                     arg0.sendBroadcast(intent);
                 }
             } else if (arg1.getAction().equals(ACTION_USB_ATTACHED)) {
+                USB_IS_CONNECTED = true;
                 if (DEBUG)
                     Log.d(TAG+SubTAG, "BroadcastReceiver called." + " ACTION_USB_ATTACHED.");
                 if (!serialPortConnected)
                     findSerialPortDevice(); // A USB device has been attached. Try to open it as a Serial port
             } else if (arg1.getAction().equals(ACTION_USB_DETACHED)) {
+                USB_IS_CONNECTED = false;
                 if (DEBUG)
                     Log.d(TAG+SubTAG, "BroadcastReceiver called." + " ACTION_USB_DETACHED.");
                 // Usb device was disconnected. send an intent to the Main Activity
@@ -355,7 +358,8 @@ public class UsbService extends Service {
         public void run() {
             if (DEBUG)
                 Log.d(TAG+SubTAG, "ReadThread called.");
-            while(true){
+            //while(true){
+            while(USB_IS_CONNECTED){
                 byte[] buffer = new byte[100];
                 int n = serialPort.syncRead(buffer, 0);
                 if(n > 0) {

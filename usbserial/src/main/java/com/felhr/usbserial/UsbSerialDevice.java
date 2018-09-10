@@ -202,7 +202,7 @@ public abstract class UsbSerialDevice implements UsbSerialInterface
     public int syncRead(byte[] buffer, int timeout)
     {
         if (DEBUG)
-            Log.d (TAG+SubTAG, "syncWrite called." + " asyncMode: " + asyncMode);
+            Log.d (TAG+SubTAG, "syncRead called." + " asyncMode: " + asyncMode);
         if(asyncMode)
         {
             return -1;
