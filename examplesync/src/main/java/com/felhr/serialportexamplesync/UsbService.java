@@ -239,6 +239,8 @@ public class UsbService extends Service {
                 if (deviceVID != 0x1d6b && (devicePID != 0x0001 && devicePID != 0x0002 && devicePID != 0x0003)) {
                     // There is a device connected to our Android device. Try to open it as a Serial Port.
                     requestUserPermission();
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "findSerialPortDevice called." + " sn: " + device.getSerialNumber());
                     keep = false;
                 } else {
                     connection = null;
