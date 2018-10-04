@@ -123,6 +123,8 @@ public class UsbService extends Service {
                     Intent intent = new Intent(ACTION_USB_PERMISSION_GRANTED);
                     arg0.sendBroadcast(intent);
                     connection = usbManager.openDevice(device);
+                    if (DEBUG)
+                        Log.d(TAG+SubTAG, "BroadcastReceiver called." + " conection, USBHOST.");
                     new ConnectionThread().start();
                 } else // User not accepted our USB connection. Send an Intent to the Main Activity
                 {
@@ -240,7 +242,7 @@ public class UsbService extends Service {
                     // There is a device connected to our Android device. Try to open it as a Serial Port.
                     requestUserPermission();
                     if (DEBUG)
-                        Log.d(TAG+SubTAG, "findSerialPortDevice called." + " sn: " + device.getSerialNumber());
+                        Log.d(TAG+SubTAG, "findSerialPortDevice called." + " USBHOST sn: " + device.getSerialNumber());
                     keep = false;
                 } else {
                     connection = null;

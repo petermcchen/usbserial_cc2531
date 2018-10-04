@@ -61,8 +61,10 @@ public class CDCSerialDevice extends UsbSerialDevice
     {
         super(device, connection);
         if (DEBUG)
-            Log.d(TAG+SubTAG, "CDCSerialDevice 2 called.");
+            Log.d(TAG+SubTAG, "CDCSerialDevice 2 called." + " if: " + iface);
         mInterface = device.getInterface(iface >= 0 ? iface : findFirstCDC(device));
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "CDCSerialDevice 2 called." + " interface, USBHOST.");
     }
 
     @Override
@@ -335,7 +337,8 @@ public class CDCSerialDevice extends UsbSerialDevice
             Log.i(CLASS_ID, "Interface could not be claimed");
             return false;
         }
-
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "openCDC called." + " claim interface, USBHOST");
         // Assign endpoints
         int numberEndpoints = mInterface.getEndpointCount();
         if (DEBUG)
@@ -348,13 +351,13 @@ public class CDCSerialDevice extends UsbSerialDevice
             {
                 inEndpoint = endpoint;
                 if (DEBUG)
-                    Log.d(TAG+SubTAG, "openCDC called." + " inEndpoint.");
+                    Log.d(TAG+SubTAG, "openCDC called." + " inEndpoint." + "(" + i + ")");
             }else if(endpoint.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK
                     && endpoint.getDirection() == UsbConstants.USB_DIR_OUT)
             {
                 outEndpoint = endpoint;
                 if (DEBUG)
-                    Log.d(TAG+SubTAG, "openCDC called." + " outEndpoint.");
+                    Log.d(TAG+SubTAG, "openCDC called." + " outEndpoint." + "(" + i + ")");
             }
         }
 
@@ -368,7 +371,7 @@ public class CDCSerialDevice extends UsbSerialDevice
         setControlCommand(CDC_SET_LINE_CODING, 0, getInitialLineCoding());
         setControlCommand(CDC_SET_CONTROL_LINE_STATE, CDC_CONTROL_LINE_ON, null);
         if (DEBUG)
-            Log.d(TAG+SubTAG, "openCDC called." + " in/outEndpoint ready.");
+            Log.d(TAG+SubTAG, "openCDC called." + " in/outEndpoint ready, USBHOST.");
         return true;
     }
 
@@ -418,11 +421,15 @@ public class CDCSerialDevice extends UsbSerialDevice
     {
         int interfaceCount = device.getInterfaceCount();
         if (DEBUG)
-            Log.d(TAG+SubTAG, "findFirstCDC called.");
+            Log.d(TAG+SubTAG, "findFirstCDC called." + " if cnt: " + interfaceCount);
         for (int iIndex = 0; iIndex < interfaceCount; ++iIndex)
         {
+            if (DEBUG)
+                Log.d(TAG+SubTAG, "findFirstCDC called." + " if class: " + device.getInterface(iIndex).getInterfaceClass());
             if (device.getInterface(iIndex).getInterfaceClass() == UsbConstants.USB_CLASS_CDC_DATA)
             {
+                if (DEBUG)
+                    Log.d(TAG+SubTAG, "findFirstCDC called." + " if index: " + iIndex);
                 return iIndex;
             }
         }
