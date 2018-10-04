@@ -53,21 +53,29 @@ public class CDCSerialDevice extends UsbSerialDevice
     public CDCSerialDevice(UsbDevice device, UsbDeviceConnection connection)
     {
         this(device, connection, -1);
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "CDCSerialDevice 1 called.");
     }
 
     public CDCSerialDevice(UsbDevice device, UsbDeviceConnection connection, int iface)
     {
         super(device, connection);
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "CDCSerialDevice 2 called.");
         mInterface = device.getInterface(iface >= 0 ? iface : findFirstCDC(device));
     }
 
     @Override
     public void setInitialBaudRate(int initialBaudRate) {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setInitialBaudRate called.");
         this.initialBaudRate = initialBaudRate;
     }
 
     @Override
     public int getInitialBaudRate() {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "getInitialBaudRate called.");
         return initialBaudRate;
     }
 
@@ -136,6 +144,8 @@ public class CDCSerialDevice extends UsbSerialDevice
     @Override
     public void syncClose()
     {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "syncClose called.");
         setControlCommand(CDC_SET_CONTROL_LINE_STATE, CDC_CONTROL_LINE_OFF, null);
         connection.releaseInterface(mInterface);
         connection.close();
@@ -144,6 +154,8 @@ public class CDCSerialDevice extends UsbSerialDevice
     @Override
     public void setBaudRate(int baudRate)
     {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setBaudRate called.");
         byte[] data = getLineCoding();
 
         data[0] = (byte) (baudRate & 0xff);
@@ -157,6 +169,8 @@ public class CDCSerialDevice extends UsbSerialDevice
     @Override
     public void setDataBits(int dataBits)
     {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setDataBits called.");
         byte[] data = getLineCoding();
         switch(dataBits)
         {
@@ -183,6 +197,8 @@ public class CDCSerialDevice extends UsbSerialDevice
     @Override
     public void setStopBits(int stopBits)
     {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setStopBits called.");
         byte[] data = getLineCoding();
         switch(stopBits)
         {
@@ -207,6 +223,8 @@ public class CDCSerialDevice extends UsbSerialDevice
     @Override
     public void setParity(int parity)
     {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setParity called.");
         byte[] data = getLineCoding();
         switch(parity)
         {
@@ -237,59 +255,78 @@ public class CDCSerialDevice extends UsbSerialDevice
     public void setFlowControl(int flowControl)
     {
         // TODO Auto-generated method stub
-
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setFlowControl called.");
     }
 
     @Override
     public void setRTS(boolean state)
     {
         //TODO
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setRTS called.");
     }
 
     @Override
     public void setDTR(boolean state)
     {
         //TODO
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setDTR called.");
     }
 
     @Override
     public void getCTS(UsbCTSCallback ctsCallback)
     {
         //TODO
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "getCTS called.");
     }
 
     @Override
     public void getDSR(UsbDSRCallback dsrCallback)
     {
         //TODO
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "getDSR called.");
     }
 
     @Override
     public void getBreak(UsbBreakCallback breakCallback)
     {
         //TODO
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "getBreak called.");
     }
 
     @Override
     public void getFrame(UsbFrameCallback frameCallback)
     {
         //TODO
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "getFrame called.");
     }
 
     @Override
     public void getOverrun(UsbOverrunCallback overrunCallback)
     {
         //TODO
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "getOverrun called.");
     }
 
     @Override
     public void getParity(UsbParityCallback parityCallback)
     {
         //TODO
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "getParity called.");
     }
 
     private boolean openCDC()
     {
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "openCDC called.");
         if(connection.claimInterface(mInterface, true))
         {
             Log.i(CLASS_ID, "Interface succesfully claimed");
@@ -301,6 +338,8 @@ public class CDCSerialDevice extends UsbSerialDevice
 
         // Assign endpoints
         int numberEndpoints = mInterface.getEndpointCount();
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "openCDC called." + " no endpoints: " + numberEndpoints);
         for(int i=0;i<=numberEndpoints-1;i++)
         {
             UsbEndpoint endpoint = mInterface.getEndpoint(i);
@@ -308,10 +347,14 @@ public class CDCSerialDevice extends UsbSerialDevice
                     && endpoint.getDirection() == UsbConstants.USB_DIR_IN)
             {
                 inEndpoint = endpoint;
+                if (DEBUG)
+                    Log.d(TAG+SubTAG, "openCDC called." + " inEndpoint.");
             }else if(endpoint.getType() == UsbConstants.USB_ENDPOINT_XFER_BULK
                     && endpoint.getDirection() == UsbConstants.USB_DIR_OUT)
             {
                 outEndpoint = endpoint;
+                if (DEBUG)
+                    Log.d(TAG+SubTAG, "openCDC called." + " outEndpoint.");
             }
         }
 
@@ -324,13 +367,15 @@ public class CDCSerialDevice extends UsbSerialDevice
         // Default Setup
         setControlCommand(CDC_SET_LINE_CODING, 0, getInitialLineCoding());
         setControlCommand(CDC_SET_CONTROL_LINE_STATE, CDC_CONTROL_LINE_ON, null);
-
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "openCDC called." + " in/outEndpoint ready.");
         return true;
     }
 
     protected byte[] getInitialLineCoding() {
         byte[] lineCoding;
-
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "getInitialLineCoding called.");
         int initialBaudRate = getInitialBaudRate();
 
         if(initialBaudRate > 0) {
@@ -348,6 +393,8 @@ public class CDCSerialDevice extends UsbSerialDevice
     private int setControlCommand(int request, int value, byte[] data)
     {
         int dataLength = 0;
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "setControlCommand called.");
         if(data != null)
         {
             dataLength = data.length;
@@ -362,13 +409,16 @@ public class CDCSerialDevice extends UsbSerialDevice
         byte[] data = new byte[7];
         int response = connection.controlTransfer(CDC_REQTYPE_DEVICE2HOST, CDC_GET_LINE_CODING, 0, 0, data, data.length, USB_TIMEOUT);
         Log.i(CLASS_ID,"Control Transfer Response: " + String.valueOf(response));
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "getLineCoding called.");
         return data;
     }
 
     private static int findFirstCDC(UsbDevice device)
     {
         int interfaceCount = device.getInterfaceCount();
-
+        if (DEBUG)
+            Log.d(TAG+SubTAG, "findFirstCDC called.");
         for (int iIndex = 0; iIndex < interfaceCount; ++iIndex)
         {
             if (device.getInterface(iIndex).getInterfaceClass() == UsbConstants.USB_CLASS_CDC_DATA)
